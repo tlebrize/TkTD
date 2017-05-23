@@ -17,21 +17,28 @@ class TitleScreen(tkengine.TkMenu):
 
 class Cell(tkengine.TkPlainCell):
 
-	COLOR = {
-		True: {"empty": (0.64, 0.64, 0.64), "basic": (0.14, 0.14, 0.14),"fire": (0.75, 0.14, 0.14)},
-		False: {"empty": (0.74, 0.74, 0.74), "basic": (0.34, 0.34, 0.34),"fire": (0.95, 0.34, 0.34)}
+	COLORS = {
+		"empty": [0.9, 0.9, 0.9],
+		"wall": [0.3, 0.3, 0.3],
+		"turret": [0.6, 0.6, 0.6]
 	}
 
-	KINDS = ["empty", "basic", "fire"]
+	KINDS = ["empty", "turret", "wall"]
 
 	def __init__(self, x, y, scale):
 		super(Cell, self).__init__(x, y, scale)
-		self.selected
 		self.kind = "empty"
-		self.color = Cell.COLOR[self.selected][self.kind]
+		self.color = self.get_color()
+
+	def get_color(self):
+		color = Cell.COLORS.get(self.kind)
+		if self.selected:
+			color[1] *= 0.5
+			color[0] *= 0.5
+		return color
 
 	def draw(self):
-		self.color = Cell.COLOR[self.selected][self.kind]
+		self.color = self.get_color()
 		super(Cell, self).draw()
 
 	def build(self, kind):
@@ -61,8 +68,8 @@ class Shop(tkengine.TkMenu):
 
 	def __init__(self, world):
 		super(Shop, self).__init__(world, label="Tower Shop", menu_items=(
-			("Normal [50]"	, lambda: self.build("basic")),
-			("Fire   [150]"	, lambda: self.build("fire")),
+			("Turret [50]"	, lambda: self.build("turret")),
+			("Wall   [5]"	, lambda: self.build("wall")),
 			("Back"			, self.back)
 		))
 		self.current = None
