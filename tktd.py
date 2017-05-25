@@ -1,10 +1,14 @@
-import pyglet, tkengine, os, random, queue
+import pyglet, tkengine, random, queue
+from resources.sprite_lib import SpriteLib
+from resources.cell import Cell
+from resources.mob import Mob
+from resources.objects import Tower, Checkpoint, Wall, Object
 
 class GameScene(tkengine.TkScene):
 
 	def __init__(self, world, Cell, lib):
 		self.world = world
-		self.size = 15
+		self.size = 17
 		self.lib = lib
 		self.cells = []
 		self.batch = pyglet.graphics.Batch()
@@ -29,14 +33,15 @@ class GameScene(tkengine.TkScene):
 			pyglet.window.key.DOWN		: lambda : self.move_cursor(0, -1),
 			pyglet.window.key.UP		: lambda : self.move_cursor(0, 1),
 		}
-		self.start = self.cells[2][2]
-		self.end = self.cells[12][12]
-		self.start.content = Checkpoint("start.png", None, 2, 2, lib, self.batch)
-		self.end.content = Checkpoint("end.png", self.start, 12, 12, lib, self.batch)
+		self.start = self.cells[14][2]
+		self.end = self.cells[2][14]
+		self.start.content = Checkpoint(None, 14, 2, self.lib, self.batch)
+		self.end.content = Checkpoint(self.start, 2, 14, self.lib, self.batch)
 		self.build_paths()
 		self.temporary = []
 		self.mob_level = -1
 		pyglet.clock.schedule_interval(self.draw, 1 / 60)
+		self.running = False
 
 	def build_paths(self):
 		for line in self.cells:
@@ -48,10 +53,10 @@ class GameScene(tkengine.TkScene):
 		visited = [self.end]
 		while not frontier.empty():
 			current = frontier.get()
-			if not isinstance(current, Tower):
+			if not isinstance(current, Object):
 				for node in current.neighbors.values():
 					if node not in visited:
-						if not isinstance(node.content, Tower):
+						if not isinstance(node.content, Object):
 							frontier.put(node)
 							node.next = current
 						visited.append(node)
@@ -71,6 +76,8 @@ class GameScene(tkengine.TkScene):
 					"S": self.cells[x][(y - 1) % self.size],
 					"N": self.cells[x][(y + 1) % self.size]
 				}
+				if x == 0 or y == 0 or x == self.size-1 or y == self.size-1:
+					self.cells[x][y].content = Wall(x, y, self.lib, self.batch)
 
 	def move_cursor(self, x, y):
 		if self.current:
@@ -85,6 +92,8 @@ class GameScene(tkengine.TkScene):
 		self.batch.draw()
 
 	def destroy(self):
+		if self.running != False:
+			return
 		if self.current.content == None:
 			return
 		if self.current in self.temporary:
@@ -94,7 +103,7 @@ class GameScene(tkengine.TkScene):
 			self.build_paths()
 
 	def build(self):
-		if len(self.temporary) < 5 and self.current.content == None:
+		if len(self.temporary) < 5 and self.current.content == None and not self.running:
 			kind = "t0.{}.png".format(random.randint(0, 2))
 			self.current.add_tower(kind)
 			self.current.add_effect("temporary.png")
@@ -108,16 +117,19 @@ class GameScene(tkengine.TkScene):
 		for mob in self.mobs:
 			if not mob.move():
 				self.mobs.remove(mob)
-		if self.mob_sent < 10:
-			if self.mob_sent % 2 == 0:
+		if self.mob_sent < 100:
+			if self.mob_sent % 10 == 0:
 				self.mobs.append(Mob(self.mob_level, self.start, self.lib, self.batch))
 			self.mob_sent += 1
 		if len(self.mobs) == 0:
+			self.running = False
 			pyglet.clock.unschedule(self.mob_turn)
+			self.build_paths()
 
 	def finish(self):
 		if self.current not in self.temporary:
 			return
+		self.running = True
 		for cell in self.temporary:
 			cell.delete_effect("temporary.png")
 		self.temporary.remove(self.current)
@@ -128,113 +140,14 @@ class GameScene(tkengine.TkScene):
 		self.mobs = []
 		self.mob_sent = 0
 		self.mob_level = (self.mob_level + 1) % 3
-		pyglet.clock.schedule_interval(self.mob_turn, 0.5)
+		pyglet.clock.schedule_interval(self.mob_turn, 1/30)
+		for line in self.cells:
+			for cell in line:
+				cell.delete_effect("dot.png")
 
-class Cell(object):
-
-	def __init__(self, x, y, lib, batch):
-		self.x = x
-		self.y = y
-		self.lib = lib
-		self.batch = batch
-		self.neighbors = {}
-		self.color = (0.2, 0.2, 0.2)
-		self.effects = {}
-		self.content = None
-		self.next = None
-
-	def add_effect(self, name):
-		if not self.effects.get(name):
-			image = self.lib.images.get(name)
-			sprite = pyglet.sprite.Sprite(image, batch=self.batch)
-			sprite.x = self.x * 32
-			sprite.y = self.y * 32
-			self.effects.update({name: sprite})
-
-	def delete_effect(self, name=False):
-		if not name:
-			for sprite in self.effects:
-				self.effects.get(sprite).delete()
-			self.effects = {}
-		elif self.effects.get(name):
-			self.effects.get(name).delete()
-			self.effects.pop(name)
-
-	def select(self):
-		self.add_effect("selected.png")
-
-	def deselect(self):
-		self.delete_effect("selected.png")
-
-	def add_tower(self, name):
-		if self.content == None:
-			self.content = Tower(name, self.x, self.y, self.lib, self.batch)
-
-	def delete_tower(self):
-		if isinstance(self.content, Tower):
-			self.content.sprite.delete()
-			self.content = None
-
-class Tower(object):
-
-	def __init__(self, name, x, y, lib, batch):
-		self.x = x
-		self.y = y
-		self.name = name
-		self.lib = lib
-		self.batch = batch
-		self.sprite = None
-		self.set_sprite(self.name)
-
-	def set_sprite(self, name):
-		if self.sprite:
-			self.sprite.delete()
-		self.name = name
-		image = self.lib.images.get(self.name)
-		self.sprite = pyglet.sprite.Sprite(image,
-			x=self.x * 32, y=self.y * 32, batch=self.batch)
-
-class Checkpoint(object):
-	def __init__(self, name, next, x, y, lib, batch):
-		self.name = name
-		self.next = next
-		self.x = x
-		self.y = y
-		self.lib = lib
-		self.batch = batch
-		image = self.lib.images.get(self.name)
-		self.sprite = pyglet.sprite.Sprite(image,
-			x=self.x * 32, y=self.y * 32, batch=self.batch)
-
-class SpriteLib(object):
-
-	def __init__(self, path):
-		self.images = {}
-		for file in os.listdir(path):
-			self.images.update({file: pyglet.image.load(path + '/' + file)})
-
-class Mob(object):
-
-	def __init__(self, level, cell, lib, batch):
-		self.level = level
-		self.cell = cell
-		self.lib = lib
-		self.batch = batch
-		image = lib.images.get("mob{}.png".format(level))
-		self.sprite = pyglet.sprite.Sprite(image, x=cell.x * 32, y=cell.y * 32, batch=self.batch)
-
-	def move(self):
-		if self.cell.next:
-			self.cell = self.cell.next
-			self.sprite.x = self.cell.x * 32
-			self.sprite.y = self.cell.y * 32
-			return True
-		else:
-			self.sprite.delete()
-			return False
 
 def main():
-	window = tkengine.TkWindow(480, 480)
+	window = tkengine.TkWindow(544, 544)
 	pyglet.gl.glClearColor(0.3, 0.6, 0.3, 0.0)
 	world = tkengine.TkWorld(window)
 	lib = SpriteLib("assets")
