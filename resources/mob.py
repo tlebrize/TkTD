@@ -12,16 +12,6 @@ class Mob(object):
 		image = lib.images.get("mob{}.png".format(level))
 		self.sprite = pyglet.sprite.Sprite(image, x=cell.x * 32, y=cell.y * 32, batch=self.batch)
 
-	def clear(self, dt, sprite):
-		sprite.delete()
-
-	def hit(self):
-		self.hp -= 10
-		hit_image = self.lib.images.get("hit.png")
-		hit_sprite = pyglet.sprite.Sprite(hit_image,
-					x=self.sprite.x, y=self.sprite.y, batch=self.batch)
-		pyglet.clock.schedule_once(self.clear, 0.2, hit_sprite)
-
 	def move(self):
 		if self.sprite.x / 32 == self.next.x and self.sprite.y / 32 == self.next.y:
 			self.cell = self.next

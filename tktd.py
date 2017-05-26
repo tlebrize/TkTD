@@ -2,7 +2,8 @@ import pyglet, tkengine, random, queue
 from resources.sprite_lib import SpriteLib
 from resources.cell import Cell
 from resources.mob import Mob
-from resources.objects import Tower, Checkpoint, Wall, Object
+from resources.checkpoint import Checkpoint
+from resources.tower import Tower, Wall
 
 class GameScene(tkengine.TkScene):
 
@@ -54,10 +55,10 @@ class GameScene(tkengine.TkScene):
 		visited = [self.end]
 		while not frontier.empty():
 			current = frontier.get()
-			if not isinstance(current, Object):
+			if not isinstance(current, Wall):
 				for node in current.neighbors.values():
 					if node not in visited:
-						if not isinstance(node.content, Object):
+						if not isinstance(node.content, Wall):
 							frontier.put(node)
 							node.next = current
 						visited.append(node)
@@ -105,8 +106,7 @@ class GameScene(tkengine.TkScene):
 
 	def build(self):
 		if len(self.temporary) < 5 and self.current.content == None and not self.running:
-			kind = "t0.{}.png".format(random.randint(0, 2))
-			self.current.add_tower(kind)
+			self.current.add_tower()
 			self.current.add_effect("temporary.png")
 			self.temporary.append(self.current)
 			if not self.build_paths():

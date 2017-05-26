@@ -1,5 +1,5 @@
 import pyglet
-from .objects import Tower
+from .tower import Tower
 
 class Cell(object):
 
@@ -37,9 +37,9 @@ class Cell(object):
 	def deselect(self):
 		self.delete_effect("selected.png")
 
-	def add_tower(self, name):
+	def add_tower(self):
 		if self.content == None:
-			self.content = Tower(name, self.x, self.y, self.lib, self.batch)
+			self.content = Tower(130, self.x, self.y, self.lib, self.batch)
 
 	def delete_tower(self):
 		if isinstance(self.content, Tower):
