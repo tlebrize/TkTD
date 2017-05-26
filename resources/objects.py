@@ -1,4 +1,4 @@
-import pyglet
+import pyglet, math
 
 class Object(object):
 	pass
@@ -21,6 +21,19 @@ class Tower(Object):
 		image = self.lib.images.get(self.name)
 		self.sprite = pyglet.sprite.Sprite(image,
 			x=self.x * 32, y=self.y * 32, batch=self.batch)
+
+	def play(self, dt=None, mobs=None):
+		if not self.running or mobs == None:
+			return
+		sx = self.x * 32 + 16
+		sy = self.y * 32 + 16
+		for mob in mobs:
+			mx = mob.sprite.x + 16
+			my = mob.sprite.y + 16
+			if math.sqrt(((sx - mx) ** 2) + ((sy - my) ** 2)) < 100:
+				mob.hit()
+				break
+		pyglet.clock.schedule_once(self.play, 1, mobs)
 
 class Wall(Object):
 

@@ -14,6 +14,7 @@ class GameScene(tkengine.TkScene):
 		self.batch = pyglet.graphics.Batch()
 		self.x = 0
 		self.y = 0
+		self.towers = []
 		for x in range(0, self.size):
 			line = []
 			for y in range(0, self.size):
@@ -122,6 +123,8 @@ class GameScene(tkengine.TkScene):
 				self.mobs.append(Mob(self.mob_level, self.start, self.lib, self.batch))
 			self.mob_sent += 1
 		if len(self.mobs) == 0:
+			for tower in self.towers:
+				tower.running = False
 			self.running = False
 			pyglet.clock.unschedule(self.mob_turn)
 			self.build_paths()
@@ -129,6 +132,7 @@ class GameScene(tkengine.TkScene):
 	def finish(self):
 		if self.current not in self.temporary:
 			return
+		self.towers.append(self.current.content)
 		self.running = True
 		for cell in self.temporary:
 			cell.delete_effect("temporary.png")
@@ -144,6 +148,9 @@ class GameScene(tkengine.TkScene):
 		for line in self.cells:
 			for cell in line:
 				cell.delete_effect("dot.png")
+		for tower in self.towers:
+			tower.running = True
+			tower.play(mobs=self.mobs)
 
 
 def main():
