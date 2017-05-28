@@ -1,88 +1,96 @@
-import random, pyglet
-from .colors import *
+import pyglet, random
+from .color import *
+from .tower import Tower
 
-class Chipped(object):
-	def __init__(self):
-		image = self.lib.images.get("chipped.png")
-		self.sprite = pyglet.sprite.Sprite(image,
-			x=self.x * 32, y=self.y * 32, batch=self.batch)
-		self.attacks = 1
-		self.range = 100
+class Chipped(Tower):
+	def __init__(self, x, y, game, graphics, color):
+		super(Chipped, self).__init__(x, y, game, graphics, "chipped.png", color)
+		self.range = 72
+		self.speed = 0.8
+		self.damages = 11
+
+class Chipped_Aquamarine(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Aquamarine, self).__init__(x, y, game, graphics, Aquamarine)
+		self.speed = 0.5
+		self.range = 50
+		self.damages = 7
+		self.effect = "Faster attacks"
+
+class Chipped_Emerald(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Emerald, self).__init__(x, y, game, graphics, Emerald)
+		self.range = 79
 		self.speed = 1
+		self.effect = "Poison and slowing attacks"
+
+	def special(self, target):
+		target.debuffs["slow"].append(0.85)
+		target.debuffs["poison"].append(2)
+		def reset(_, target):
+			target.debuffs["slow"].remove(0.85)
+			target.debuffs["poison"].remove(2)
+		pyglet.clock.schedule_once(reset, 3, target)
+
+class Chipped_Opal(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Opal, self).__init__(x, y, game, graphics, Opal)
+		self.range = 86
+		self.damages = 4.5
+		self.effect = "Speed Aura"
+
+class Chipped_Saphire(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Saphire, self).__init__(x, y, game, graphics, Saphire)
+		self.range = 72
+		self.damages = 6.5
+		self.effect = "Slowing attacks"
+
+	def special(self, target):
+		target.debuffs["slow"].append(0.5)
+		def reset(_, target):
+			target.debuffs["slow"].remove(0.5)
+		pyglet.clock.schedule_once(reset, 3, target)
+
+class Chipped_Diamond(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Diamond, self).__init__(x, y, game, graphics, Diamond)
 		self.damages = 10
-		r = random.randint(0, 7)
-		if r == 0:
-			self = ChippedAquamarine.__init__(self)
-		if r == 1:
-			self = ChippedEmerald.__init__(self)
-		if r == 2:
-			self = ChippedOpal.__init__(self)
-		if r == 3:
-			self = ChippedSaphire.__init__(self)
-		if r == 4:
-			self = ChippedDiamond.__init__(self)
-		if r == 5:
-			self = ChippedTopaz.__init__(self)
-		if r == 6:
-			self = ChippedAmethyst.__init__(self)
-		if r == 7:
-			self = ChippedRuby.__init__(self)
-		return self
+		self.effect = "Ground only and critical hits chance"
+		self.targets = ["ground"]
 
-class ChippedAquamarine(object):
-	def __init__(self):
-		self.name = "Chipped Aquamarine"
-		self.speed = 0.7
-		self.sprite.color = AQUAMARINE
-		return self
+	def special(self, target):
+		if random.randint(0, 100) > 25:
+			target.hp -= self.damages
 
-class ChippedEmerald(object):
-	def __init__(self):
-		#todo : poison
-		self.name = "Chipped Emerald"
-		self.range = 300
-		self.sprite.color = EMERALD
-		return self
-
-class ChippedOpal(object):
-	def __init__(self):
-		#todo : aura
-		self.name = "Chipped Opal"
-		self.sprite.color = OPAL
-		return self
-
-class ChippedSaphire(object):
-	def __init__(self):
-		#todo: slow
-		self.name = "Chipped Saphire"
-		self.sprite.color = SAPHIRE
-		return self
-
-class ChippedDiamond(object):
-	def __init__(self):
-		# todo: crit
-		self.name = "Chipped Diamond"
-		self.sprite.color = DIAMOND
-		return self
-
-class ChippedTopaz(object):
-	def __init__(self):
-		self.name = "Chipped Topaz"
+class Chipped_Topaz(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Topaz, self).__init__(x, y, game, graphics, Topaz)
+		self.damages = 4
 		self.attacks = 3
-		self.damages = 5
-		self.sprite.color = TOPAZ
-		return self
+		self.effect = "Hits multiple targets"
 
-class ChippedAmethyst(object):
-	def __init__(self):
-		# todo: ait-only
-		self.name = "Chipped Amethyst"
-		self.sprite.color = AMETHYST
-		return self
+class Chipped_Amethyst(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Amethyst, self).__init__(x, y, game, graphics, Amethyst)
+		self.range = 143
+		self.effect = "Attacks air only"
+		self.targets = ["air"]
 
-class ChippedRuby(object):
-	def __init__(self):
-		# todo : splash
-		self.name = "Chipped Ruby"
-		self.sprite.color = RUBY
-		return self
+class Chipped_Ruby(Chipped):
+	def __init__(self, x, y, game, graphics):
+		super(Chipped_Ruby, self).__init__(x, y, game, graphics, Ruby)
+		self.range = 114
+		self.damages = 8.5
+		self.speed = 1
+		self.effect = "Splash damages"
+
+	def special(self, target):
+		for mob in self.game.mobs:
+			if mob is not target:
+				if abs(mob.x - target.x) < 64 and abs(mob.y - target.y) < 64:
+					mob.hp -= 0.5 * self.damages
+
+
+
+
