@@ -10,7 +10,7 @@ class Rock(object):
 
 
 class Tower(object):
-	def __init__(self, x, y, game, graphics, sprite, color):
+	def __init__(self, x, y, game, graphics, sprite, color=None):
 		self.x = x
 		self.y = y
 		self.game = game
@@ -20,6 +20,7 @@ class Tower(object):
 			x=x, y=y, z=1, color=color)
 		self.attacks = 1
 		self.targets = ["ground", "air"]
+		self.combines_into = None
 
 	def __str__(self):
 		return str(type(self).__name__).replace("_", " ")

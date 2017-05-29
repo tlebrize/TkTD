@@ -4,6 +4,7 @@ from .graphics import Graphics
 from .mob import Mob
 from .tower import Rock
 from .chipped import *
+from .special import *
 from .mob import *
 from .menu import Menu
 
@@ -30,12 +31,14 @@ class Game(tkengine.TkScene):
 			pyglet.window.key.SPACE		: self._build,
 			pyglet.window.key.BACKSPACE	: self._destroy,
 			pyglet.window.key.RETURN	: self._finish,
+			pyglet.window.key.C			: self._combine,
 			pyglet.window.key.LEFT		: lambda : self.grid.move_cursor(-1, 0),
 			pyglet.window.key.UP		: lambda : self.grid.move_cursor(0, 1),
 			pyglet.window.key.RIGHT		: lambda : self.grid.move_cursor(1, 0),
 			pyglet.window.key.DOWN		: lambda : self.grid.move_cursor(0, -1),
 		}
 		pyglet.clock.schedule_interval(self._draw, 1 / 60)
+
 
 	def _draw(self, _):
 		self.world.window.clear()
@@ -53,6 +56,33 @@ class Game(tkengine.TkScene):
 			self.grid.current.content = None
 
 
+	def _check_special_recipes(self):
+
+		def check_one_recipe(self, kind):
+			if all([x in tower_types for x in kind.RECIPE]):
+				print(kind.__name__)
+				for tower in self.towers:
+					if type(tower) in kind.RECIPE:
+						self.grid.cells[tower.x//32][tower.y//32].add_effect("combinable.png")
+						tower.combines_into = kind
+		tower_types = [type(t) for t in self.towers]
+		for x in [Malachite, Silver]:
+			check_one_recipe(self, x)
+
+
+	def _combine(self):
+		if not self.grid.current.content or not self.grid.current.content.combines_into:
+			return
+		old_tower = type(self.grid.current.content)
+		new_tower = self.grid.current.content.combines_into
+		self.towers.remove(self.grid.current.content)
+		self.grid.current.content.sprite.delete()
+		self.grid.current.content = new_tower(self.grid.current.x*32, 
+			self.grid.current.y*32, self, self.graphics)
+		self.towers.append(self.grid.current.content)
+		self.grid.current.content.play()
+
+
 	def _finish(self):
 		if self.running or self.grid.current not in self.temporary:
 			return
@@ -64,6 +94,7 @@ class Game(tkengine.TkScene):
 			tower.content = Rock(tower.x*32, tower.y*32, self.graphics)
 			tower.delete_effect("temporary.png")
 		self.temporary = []
+		self._check_special_recipes()
 		self._start_level()
 
 
@@ -76,7 +107,7 @@ class Game(tkengine.TkScene):
 			self.grid.current.walkable = True
 			return
 		quality = random.choice(["Chipped"])
-		color = random.choice(["Aquamarine","Emerald","Opal","Saphire","Diamond","Topaz","Amethyst","Ruby"])
+		color = random.choice(["Aquamarine","Emerald","Opal"])#,"Saphire","Diamond","Topaz","Amethyst","Ruby"])
 		x = self.grid.current.x * 32
 		y = self.grid.current.y * 32
 		tower = globals().get(quality+"_"+color)

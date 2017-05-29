@@ -19,7 +19,6 @@ class Menu(object):
 			"mob": pyglet.text.Label("", x=682, y=615, batch=self.batch)
 		}
 
-
 	def update_mob(self, mob):
 		self.labels["mob"].text = mob.__name__
 
